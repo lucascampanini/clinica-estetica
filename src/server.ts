@@ -15,6 +15,10 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', ts: Date.now() });
 });
 
+import { rotinaRoutes } from './modules/rotina/infra/http/routes/rotinaRoutes';
+
+app.use('/api/v1/rotinas', rotinaRoutes);
+
 // TODO: registrar rotas dos módulos aqui
 // app.use('/api/v1/agendamentos', agendamentoRoutes);
 // app.use('/api/v1/clientes', clienteRoutes);

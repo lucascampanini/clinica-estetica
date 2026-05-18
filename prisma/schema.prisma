@@ -25,6 +25,8 @@ model Clinica {
   servicos      Servico[]
   agendamentos  Agendamento[]
   cobranças     Cobranca[]
+  rotinas       Rotina[]
+  pontuacoes    PontuacaoCliente[]
 
   @@map("clinicas")
 }
@@ -70,6 +72,11 @@ model Cliente {
   clinica      Clinica       @relation(fields: [clinicaId], references: [id])
   agendamentos Agendamento[]
   anamneses    Anamnese[]
+  rotinas      Rotina[]
+  registros    RegistroDiario[]
+  fotos        FotoEvolucao[]
+  pontuacao    PontuacaoCliente?
+  pushTokens   PushToken[]
 
   @@unique([clinicaId, telefone])
   @@map("clientes")
@@ -101,6 +108,7 @@ model Profissional {
   clinica      Clinica          @relation(fields: [clinicaId], references: [id])
   agendamentos Agendamento[]
   disponibilidades DisponibilidadeProfissional[]
+  rotinas      Rotina[]
 
   @@map("profissionais")
 }
@@ -200,4 +208,134 @@ enum StatusCobranca {
   PAGO
   CANCELADO
   ESTORNADO
+}
+
+// ── Rotina ───────────────────────────────────────────────────────────────────
+// Configurada pela esteticista para cada cliente
+model Rotina {
+  id             String   @id @default(uuid())
+  clinicaId      String
+  clienteId      String
+  profissionalId String
+  nome           String
+  descricao      String?
+  ativa          Boolean  @default(true)
+  criadaEm      DateTime @default(now())
+  atualizadaEm  DateTime @updatedAt
+
+  clinica      Clinica      @relation(fields: [clinicaId], references: [id])
+  cliente      Cliente      @relation(fields: [clienteId], references: [id])
+  profissional Profissional @relation(fields: [profissionalId], references: [id])
+  passos       PassoRotina[]
+  registros    RegistroDiario[]
+
+  @@map("rotinas")
+}
+
+// Cada passo da rotina (ex: "Aplicar sérum vitamina C às 21h")
+model PassoRotina {
+  id              String          @id @default(uuid())
+  rotinaId        String
+  nome            String
+  produto         String?
+  instrucoes      String?
+  periodo         PeriodoRotina
+  horarioSugerido String?         // "08:00"
+  diasSemana      Int[]           // 0=dom, 1=seg, ... 6=sab. Vazio = todos os dias
+  ordem           Int             @default(0)
+  ativo           Boolean         @default(true)
+  criadoEm       DateTime        @default(now())
+
+  rotina     Rotina       @relation(fields: [rotinaId], references: [id], onDelete: Cascade)
+  conclusoes ConclusaoPasso[]
+
+  @@map("passos_rotina")
+}
+
+enum PeriodoRotina {
+  MANHA
+  TARDE
+  NOITE
+  QUALQUER
+}
+
+// Registro diário — gerado a cada dia que a cliente interage com a rotina
+model RegistroDiario {
+  id        String   @id @default(uuid())
+  rotinaId  String
+  clienteId String
+  data      DateTime @db.Date
+  criadoEm DateTime @default(now())
+
+  rotina     Rotina       @relation(fields: [rotinaId], references: [id])
+  cliente    Cliente      @relation(fields: [clienteId], references: [id])
+  conclusoes ConclusaoPasso[]
+  fotos      FotoEvolucao[]
+
+  // Calculado após o dia: quanto % foi concluído
+  percentualConcluido Float?
+  estrelasGanhas      Int?   // 0-5 estrelas conforme o percentual
+
+  @@unique([rotinaId, data])
+  @@map("registros_diarios")
+}
+
+// Conclusão de um passo em um registro diário
+model ConclusaoPasso {
+  id               String   @id @default(uuid())
+  registroDiarioId String
+  passoRotinaId    String
+  concluido        Boolean  @default(false)
+  concluidoEm     DateTime?
+
+  registroDiario RegistroDiario @relation(fields: [registroDiarioId], references: [id], onDelete: Cascade)
+  passoRotina    PassoRotina    @relation(fields: [passoRotinaId], references: [id])
+
+  @@unique([registroDiarioId, passoRotinaId])
+  @@map("conclusoes_passo")
+}
+
+// Foto de evolução — salva no momento do check
+model FotoEvolucao {
+  id               String   @id @default(uuid())
+  registroDiarioId String
+  clienteId        String
+  url              String   // URL do Firebase Storage
+  legenda          String?
+  criadaEm        DateTime @default(now())
+
+  registroDiario RegistroDiario @relation(fields: [registroDiarioId], references: [id], onDelete: Cascade)
+  cliente        Cliente        @relation(fields: [clienteId], references: [id])
+
+  @@map("fotos_evolucao")
+}
+
+// Pontuação acumulada do cliente (gamificação)
+model PontuacaoCliente {
+  id             String   @id @default(uuid())
+  clinicaId      String
+  clienteId      String   @unique
+  estrelasTotal  Int      @default(0)
+  streakAtual    Int      @default(0)   // dias consecutivos com rotina 100%
+  streakMaximo   Int      @default(0)
+  ultimoDiaFeito DateTime? @db.Date
+  atualizadoEm  DateTime @updatedAt
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@map("pontuacao_clientes")
+}
+
+// Token de push notification do dispositivo da cliente
+model PushToken {
+  id        String   @id @default(uuid())
+  clienteId String
+  token     String   @unique
+  ativo     Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@map("push_tokens")
 }
