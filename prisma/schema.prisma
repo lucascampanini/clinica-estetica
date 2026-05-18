@@ -1,0 +1,203 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Clínica (tenant) ────────────────────────────────────────────────────────
+model Clinica {
+  id          String   @id @default(uuid())
+  nome        String
+  cnpj        String?  @unique
+  telefone    String?
+  email       String?
+  endereco    String?
+  ativa       Boolean  @default(true)
+  criadaEm    DateTime @default(now())
+  atualizadaEm DateTime @updatedAt
+
+  usuarios      Usuario[]
+  clientes      Cliente[]
+  profissionais Profissional[]
+  servicos      Servico[]
+  agendamentos  Agendamento[]
+  cobranças     Cobranca[]
+
+  @@map("clinicas")
+}
+
+// ── Usuário (acesso ao sistema) ─────────────────────────────────────────────
+model Usuario {
+  id           String      @id @default(uuid())
+  clinicaId    String
+  nome         String
+  email        String
+  senhaHash    String
+  perfil       PerfilUsuario
+  ativo        Boolean     @default(true)
+  criadoEm    DateTime    @default(now())
+  atualizadoEm DateTime    @updatedAt
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+
+  @@unique([clinicaId, email])
+  @@map("usuarios")
+}
+
+enum PerfilUsuario {
+  ADMIN
+  PROFISSIONAL
+  RECEPCIONISTA
+}
+
+// ── Cliente ─────────────────────────────────────────────────────────────────
+model Cliente {
+  id           String   @id @default(uuid())
+  clinicaId    String
+  nome         String
+  telefone     String
+  email        String?
+  cpf          String?
+  dataNascimento DateTime?
+  observacoes  String?
+  ativo        Boolean  @default(true)
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clinica      Clinica       @relation(fields: [clinicaId], references: [id])
+  agendamentos Agendamento[]
+  anamneses    Anamnese[]
+
+  @@unique([clinicaId, telefone])
+  @@map("clientes")
+}
+
+// ── Anamnese ────────────────────────────────────────────────────────────────
+model Anamnese {
+  id        String   @id @default(uuid())
+  clienteId String
+  conteudo  Json
+  criadaEm  DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@map("anamneses")
+}
+
+// ── Profissional ─────────────────────────────────────────────────────────────
+model Profissional {
+  id           String   @id @default(uuid())
+  clinicaId    String
+  nome         String
+  especialidade String?
+  telefone     String?
+  ativo        Boolean  @default(true)
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clinica      Clinica          @relation(fields: [clinicaId], references: [id])
+  agendamentos Agendamento[]
+  disponibilidades DisponibilidadeProfissional[]
+
+  @@map("profissionais")
+}
+
+// ── Disponibilidade do profissional ─────────────────────────────────────────
+model DisponibilidadeProfissional {
+  id             String @id @default(uuid())
+  profissionalId String
+  diaSemana      Int    // 0=domingo, 6=sábado
+  horaInicio     String // "09:00"
+  horaFim        String // "18:00"
+
+  profissional Profissional @relation(fields: [profissionalId], references: [id])
+
+  @@map("disponibilidades_profissional")
+}
+
+// ── Serviço ──────────────────────────────────────────────────────────────────
+model Servico {
+  id           String   @id @default(uuid())
+  clinicaId    String
+  nome         String
+  descricao    String?
+  duracaoMinutos Int
+  preco        Decimal  @db.Decimal(10, 2)
+  ativo        Boolean  @default(true)
+  criadoEm    DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clinica      Clinica       @relation(fields: [clinicaId], references: [id])
+  agendamentos Agendamento[]
+
+  @@map("servicos")
+}
+
+// ── Agendamento ──────────────────────────────────────────────────────────────
+model Agendamento {
+  id             String            @id @default(uuid())
+  clinicaId      String
+  clienteId      String
+  profissionalId String
+  servicoId      String
+  inicio         DateTime
+  fim            DateTime
+  status         StatusAgendamento @default(PENDENTE)
+  observacoes    String?
+  criadoEm      DateTime          @default(now())
+  atualizadoEm  DateTime          @updatedAt
+
+  clinica      Clinica      @relation(fields: [clinicaId], references: [id])
+  cliente      Cliente      @relation(fields: [clienteId], references: [id])
+  profissional Profissional @relation(fields: [profissionalId], references: [id])
+  servico      Servico      @relation(fields: [servicoId], references: [id])
+  cobranca     Cobranca?
+
+  @@index([clinicaId, inicio])
+  @@index([profissionalId, inicio])
+  @@map("agendamentos")
+}
+
+enum StatusAgendamento {
+  PENDENTE
+  CONFIRMADO
+  CANCELADO
+  CONCLUIDO
+  NAO_COMPARECEU
+}
+
+// ── Cobrança ──────────────────────────────────────────────────────────────────
+model Cobranca {
+  id             String        @id @default(uuid())
+  clinicaId      String
+  agendamentoId  String        @unique
+  valor          Decimal       @db.Decimal(10, 2)
+  formaPagamento FormaPagamento
+  status         StatusCobranca @default(PENDENTE)
+  pagoEm         DateTime?
+  criadaEm      DateTime      @default(now())
+  atualizadaEm  DateTime      @updatedAt
+
+  clinica     Clinica     @relation(fields: [clinicaId], references: [id])
+  agendamento Agendamento @relation(fields: [agendamentoId], references: [id])
+
+  @@map("cobrancas")
+}
+
+enum FormaPagamento {
+  DINHEIRO
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  TRANSFERENCIA
+}
+
+enum StatusCobranca {
+  PENDENTE
+  PAGO
+  CANCELADO
+  ESTORNADO
+}
