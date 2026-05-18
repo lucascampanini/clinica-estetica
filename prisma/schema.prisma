@@ -27,6 +27,7 @@ model Clinica {
   cobranças     Cobranca[]
   rotinas       Rotina[]
   pontuacoes    PontuacaoCliente[]
+  produtos      ProdutoVitrine[]
 
   @@map("clinicas")
 }
@@ -325,6 +326,43 @@ model PontuacaoCliente {
   cliente Cliente @relation(fields: [clienteId], references: [id])
 
   @@map("pontuacao_clientes")
+}
+
+// ── Vitrine de produtos (afiliados) ─────────────────────────────────────────
+model ProdutoVitrine {
+  id            String    @id @default(uuid())
+  clinicaId     String
+  nome          String
+  descricao     String?
+  imagemUrl     String?
+  preco         Decimal?  @db.Decimal(10, 2)  // apenas exibição, venda é externa
+  categoria     String?
+  linkParceiro  String    // URL já parametrizada do programa de afiliados
+  ativo         Boolean   @default(true)
+  destaque      Boolean   @default(false)     // aparece primeiro na vitrine
+  ordem         Int       @default(0)
+  totalCliques  Int       @default(0)
+  criadoEm     DateTime  @default(now())
+  atualizadoEm DateTime  @updatedAt
+
+  clinica  Clinica        @relation(fields: [clinicaId], references: [id])
+  cliques  CliqueVitrine[]
+
+  @@index([clinicaId, ativo, ordem])
+  @@map("produtos_vitrine")
+}
+
+// Rastreamento de cliques — para a esteticista ver performance
+model CliqueVitrine {
+  id         String   @id @default(uuid())
+  produtoId  String
+  clienteId  String?  // null = visitante não identificado
+  criadoEm  DateTime @default(now())
+
+  produto ProdutoVitrine @relation(fields: [produtoId], references: [id])
+
+  @@index([produtoId, criadoEm])
+  @@map("cliques_vitrine")
 }
 
 // Token de push notification do dispositivo da cliente

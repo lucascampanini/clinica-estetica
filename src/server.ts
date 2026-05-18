@@ -16,8 +16,10 @@ app.get('/health', (_req, res) => {
 });
 
 import { rotinaRoutes } from './modules/rotina/infra/http/routes/rotinaRoutes';
+import { vitrineRoutes } from './modules/vitrine/infra/http/routes/vitrineRoutes';
 
 app.use('/api/v1/rotinas', rotinaRoutes);
+app.use('/api/v1/vitrine', vitrineRoutes);
 
 // TODO: registrar rotas dos módulos aqui
 // app.use('/api/v1/agendamentos', agendamentoRoutes);
