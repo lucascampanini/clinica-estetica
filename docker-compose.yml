@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: clinica-pg
+    environment:
+      POSTGRES_USER: clinica
+      POSTGRES_PASSWORD: clinica123
+      POSTGRES_DB: clinica_estetica
+    ports:
+      - "5432:5432"
+    volumes:
+      - clinica_pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  clinica_pg_data:
