@@ -28,6 +28,8 @@ model Clinica {
   rotinas       Rotina[]
   pontuacoes    PontuacaoCliente[]
   produtos      ProdutoVitrine[]
+  avaliacoes    AvaliacaoAtendimento[]
+  retornos      RetornoRecomendado[]
 
   @@map("clinicas")
 }
@@ -78,6 +80,8 @@ model Cliente {
   fotos        FotoEvolucao[]
   pontuacao    PontuacaoCliente?
   pushTokens   PushToken[]
+  avaliacoes   AvaliacaoAtendimento[]
+  retornos     RetornoRecomendado[]
 
   @@unique([clinicaId, telefone])
   @@map("clientes")
@@ -110,6 +114,7 @@ model Profissional {
   agendamentos Agendamento[]
   disponibilidades DisponibilidadeProfissional[]
   rotinas      Rotina[]
+  retornos     RetornoRecomendado[]
 
   @@map("profissionais")
 }
@@ -326,6 +331,52 @@ model PontuacaoCliente {
   cliente Cliente @relation(fields: [clienteId], references: [id])
 
   @@map("pontuacao_clientes")
+}
+
+// ── Avaliação pós-atendimento ────────────────────────────────────────────────
+model AvaliacaoAtendimento {
+  id         String   @id @default(uuid())
+  clinicaId  String
+  clienteId  String
+  nota       Int      // 1-5 estrelas
+  comentario String?
+  servico    String?  // nome do serviço (texto livre até agendamento ser implementado)
+  criadoEm  DateTime @default(now())
+
+  clinica Clinica @relation(fields: [clinicaId], references: [id])
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+
+  @@index([clinicaId, criadoEm])
+  @@map("avaliacoes_atendimento")
+}
+
+// ── Retorno recomendado ──────────────────────────────────────────────────────
+model RetornoRecomendado {
+  id             String        @id @default(uuid())
+  clinicaId      String
+  clienteId      String
+  profissionalId String
+  dataRetorno    DateTime
+  observacao     String?
+  status         StatusRetorno @default(PENDENTE)
+  lembrete7dias  Boolean       @default(false)
+  lembrete1dia   Boolean       @default(false)
+  criadoEm      DateTime      @default(now())
+  atualizadoEm  DateTime      @updatedAt
+
+  clinica      Clinica      @relation(fields: [clinicaId], references: [id])
+  cliente      Cliente      @relation(fields: [clienteId], references: [id])
+  profissional Profissional @relation(fields: [profissionalId], references: [id])
+
+  @@index([clinicaId, dataRetorno, status])
+  @@map("retornos_recomendados")
+}
+
+enum StatusRetorno {
+  PENDENTE
+  AGENDADO
+  EXPIRADO
+  CANCELADO
 }
 
 // ── Vitrine de produtos (afiliados) ─────────────────────────────────────────

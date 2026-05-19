@@ -15,11 +15,17 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', ts: Date.now() });
 });
 
-import { rotinaRoutes } from './modules/rotina/infra/http/routes/rotinaRoutes';
-import { vitrineRoutes } from './modules/vitrine/infra/http/routes/vitrineRoutes';
+import { rotinaRoutes }    from './modules/rotina/infra/http/routes/rotinaRoutes';
+import { vitrineRoutes }   from './modules/vitrine/infra/http/routes/vitrineRoutes';
+import { avaliacaoRoutes } from './modules/avaliacao/infra/http/routes/avaliacaoRoutes';
+import { clienteRoutes }   from './modules/clientes/infra/http/routes/clienteRoutes';
+import { retornoRoutes }   from './modules/retorno/infra/http/routes/retornoRoutes';
 
-app.use('/api/v1/rotinas', rotinaRoutes);
-app.use('/api/v1/vitrine', vitrineRoutes);
+app.use('/api/v1/rotinas',    rotinaRoutes);
+app.use('/api/v1/vitrine',    vitrineRoutes);
+app.use('/api/v1/avaliacoes', avaliacaoRoutes);
+app.use('/api/v1/clientes',   clienteRoutes);
+app.use('/api/v1/retornos',   retornoRoutes);
 
 // TODO: registrar rotas dos módulos aqui
 // app.use('/api/v1/agendamentos', agendamentoRoutes);
