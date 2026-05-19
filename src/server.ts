@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import './config/env';
-import express from 'express';
+import 'express-async-errors';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
@@ -37,13 +38,14 @@ app.use('/api/v1/avaliacoes',    avaliacaoRoutes);
 app.use('/api/v1/clientes',      clienteRoutes);
 app.use('/api/v1/retornos',      retornoRoutes);
 
-// TODO: registrar rotas dos módulos aqui
-// app.use('/api/v1/agendamentos', agendamentoRoutes);
-// app.use('/api/v1/clientes', clienteRoutes);
-// app.use('/api/v1/servicos', servicoRoutes);
-
 app.use((_req, res) => {
   res.status(404).json({ error: 'Rota não encontrada.' });
+});
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err);
+  res.status(500).json({ error: 'Erro interno do servidor.' });
 });
 
 const server = app.listen(PORT, () => {

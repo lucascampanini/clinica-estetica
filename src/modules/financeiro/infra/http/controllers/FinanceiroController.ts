@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@infra/database/prisma';
+import { UniqueEntityID } from '@shared/domain/UniqueEntityID';
 import { CobrancaRepositoryPrisma } from '../../repositories/CobrancaRepositoryPrisma';
 import { CriarCobrancaUseCase } from '../../../application/use-cases/CriarCobranca/CriarCobrancaUseCase';
 import { RegistrarPagamentoUseCase } from '../../../application/use-cases/RegistrarPagamento/RegistrarPagamentoUseCase';
@@ -37,7 +38,6 @@ export class FinanceiroController {
   async listar(req: Request, res: Response): Promise<void> {
     const hoje = new Date().toISOString().slice(0, 10);
     const repo = this.repo;
-    const { UniqueEntityID } = await import('@shared/domain/UniqueEntityID');
 
     const cobranças = await repo.listar(
       new UniqueEntityID(String(req.params['clinicaId'])),
