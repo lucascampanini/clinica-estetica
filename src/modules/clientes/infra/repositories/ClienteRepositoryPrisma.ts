@@ -3,6 +3,7 @@ import { UniqueEntityID } from '@shared/domain/UniqueEntityID';
 import {
   IClienteRepository,
   ClienteAniversariante,
+  ClienteResumo,
 } from '../../domain/repositories/IClienteRepository';
 
 export class ClienteRepositoryPrisma implements IClienteRepository {
@@ -39,6 +40,36 @@ export class ClienteRepositoryPrisma implements IClienteRepository {
       email:          r.email ?? undefined,
       dataNascimento: r.datanascimento,
       idade:          hoje.getFullYear() - r.datanascimento.getFullYear(),
+    }));
+  }
+
+  async listar(clinicaId: UniqueEntityID, busca?: string): Promise<ClienteResumo[]> {
+    const rows = await this.prisma.cliente.findMany({
+      where: {
+        clinicaId: clinicaId.toString(),
+        ...(busca ? {
+          OR: [
+            { nome:     { contains: busca, mode: 'insensitive' } },
+            { telefone: { contains: busca } },
+            { email:    { contains: busca, mode: 'insensitive' } },
+          ],
+        } : {}),
+      },
+      orderBy: { nome: 'asc' },
+      select: {
+        id: true, nome: true, telefone: true, email: true,
+        dataNascimento: true, ativo: true, criadoEm: true,
+      },
+    });
+
+    return rows.map(r => ({
+      id:             r.id,
+      nome:           r.nome,
+      telefone:       r.telefone,
+      email:          r.email ?? undefined,
+      dataNascimento: r.dataNascimento ?? undefined,
+      ativo:          r.ativo,
+      criadoEm:      r.criadoEm,
     }));
   }
 }

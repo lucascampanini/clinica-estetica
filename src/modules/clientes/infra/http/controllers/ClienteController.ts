@@ -13,4 +13,15 @@ export class ClienteController {
     if (result.isFailure) { res.status(422).json({ error: result.getErrorValue() }); return; }
     res.status(200).json(result.getValue());
   }
+
+  // Esteticista: lista todos os clientes com busca opcional
+  async listar(req: Request, res: Response): Promise<void> {
+    const { UniqueEntityID } = await import('@shared/domain/UniqueEntityID');
+    const busca = req.query['busca'] ? String(req.query['busca']) : undefined;
+    const clientes = await this.repo.listar(
+      new UniqueEntityID(String(req.params['clinicaId'])),
+      busca,
+    );
+    res.status(200).json(clientes);
+  }
 }
