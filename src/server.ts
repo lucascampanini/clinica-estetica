@@ -16,6 +16,12 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', ts: Date.now() });
 });
 
+app.get('/setup-info', async (_req, res) => {
+  const { prisma } = await import('./infra/database/prisma');
+  const clinica = await prisma.clinica.findFirst({ include: { clientes: { take: 1 } } });
+  res.json({ clinicaId: clinica?.id, clienteId: clinica?.clientes[0]?.id });
+});
+
 import { authRoutes }         from './modules/auth/infra/http/routes/authRoutes';
 import { catalogoRoutes }     from './modules/catalogo/infra/http/routes/catalogoRoutes';
 import { profissionalRoutes } from './modules/profissional/infra/http/routes/profissionalRoutes';
