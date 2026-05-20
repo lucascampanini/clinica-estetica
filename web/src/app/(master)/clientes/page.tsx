@@ -6,17 +6,32 @@ import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Search, Cake, Phone, Mail } from 'lucide-react';
+import { Search, Cake, Phone, Mail, Check, Sun, Star, ShoppingBag } from 'lucide-react';
 import { format, differenceInYears } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+const CLINICA_ID = process.env.NEXT_PUBLIC_CLINICA_ID ?? '';
 
 export default function ClientesPage() {
   const { usuario, carregando: authCarregando } = useAuth();
   const [clientes,   setClientes]   = useState<any[]>([]);
   const [busca,      setBusca]      = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [copiado,    setCopiado]    = useState<string | null>(null);
+
+  function copiarLink(clienteId: string, tipo: 'rotina' | 'avaliar' | 'vitrine') {
+    const base = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = tipo === 'vitrine'
+      ? `${base}/c/${CLINICA_ID}/vitrine`
+      : `${base}/c/${CLINICA_ID}/${tipo}/${clienteId}`;
+    navigator.clipboard.writeText(url);
+    const key = `${clienteId}-${tipo}`;
+    setCopiado(key);
+    setTimeout(() => setCopiado(k => k === key ? null : k), 2000);
+  }
 
   const carregar = useCallback(async (texto: string) => {
     if (!usuario) return;
@@ -109,6 +124,25 @@ export default function ClientesPage() {
                           {format(new Date(c.dataNascimento), 'd MMM yyyy', { locale: ptBR })} · {idade} anos
                         </span>
                       )}
+                    </div>
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                      {(['rotina', 'avaliar', 'vitrine'] as const).map(tipo => {
+                        const copied = copiado === `${c.id}-${tipo}`;
+                        const labels = { rotina: 'Rotina', avaliar: 'Avaliação', vitrine: 'Vitrine' };
+                        const icons  = { rotina: <Sun size={11} />, avaliar: <Star size={11} />, vitrine: <ShoppingBag size={11} /> };
+                        return (
+                          <Button
+                            key={tipo}
+                            variant="outline"
+                            size="sm"
+                            className={`h-6 px-2 text-xs gap-1 transition-colors ${copied ? 'border-green-400 text-green-600' : 'text-muted-foreground'}`}
+                            onClick={() => copiarLink(c.id, tipo)}
+                          >
+                            {copied ? <Check size={11} /> : icons[tipo]}
+                            {copied ? 'Copiado!' : labels[tipo]}
+                          </Button>
+                        );
+                      })}
                     </div>
                   </div>
                 </CardContent>
