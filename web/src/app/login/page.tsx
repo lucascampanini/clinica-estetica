@@ -12,10 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 
+const CLINICA_ID = process.env.NEXT_PUBLIC_CLINICA_ID ?? '';
+
 const schema = z.object({
-  clinicaId: z.string().min(1, 'Informe o ID da clínica'),
-  email:     z.string().email('E-mail inválido'),
-  senha:     z.string().min(1, 'Informe a senha'),
+  email: z.string().email('E-mail inválido'),
+  senha: z.string().min(1, 'Informe a senha'),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -32,7 +33,7 @@ export default function LoginPage() {
     setErro('');
     setCarregando(true);
     try {
-      const res = await api.post('/auth/login', data);
+      const res = await api.post('/auth/login', { ...data, clinicaId: CLINICA_ID });
       salvarSessao(res.data.token, res.data.usuario);
       router.replace('/dashboard');
     } catch (e: any) {
@@ -51,11 +52,6 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="clinicaId">ID da Clínica</Label>
-              <Input id="clinicaId" placeholder="uuid da clínica" {...register('clinicaId')} />
-              {errors.clinicaId && <p className="text-xs text-red-500">{errors.clinicaId.message}</p>}
-            </div>
             <div className="space-y-1">
               <Label htmlFor="email">E-mail</Label>
               <Input id="email" type="email" placeholder="seu@email.com" {...register('email')} />
