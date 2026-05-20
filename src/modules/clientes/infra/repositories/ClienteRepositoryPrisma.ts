@@ -4,10 +4,29 @@ import {
   IClienteRepository,
   ClienteAniversariante,
   ClienteResumo,
+  CriarClienteInput,
 } from '../../domain/repositories/IClienteRepository';
 
 export class ClienteRepositoryPrisma implements IClienteRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  async criar(input: CriarClienteInput): Promise<{ id: string }> {
+    const cliente = await this.prisma.cliente.create({
+      data: {
+        clinicaId:      input.clinicaId,
+        nome:           input.nome,
+        telefone:       input.telefone,
+        email:          input.email,
+        cpf:            input.cpf,
+        dataNascimento: input.dataNascimento ? new Date(input.dataNascimento) : undefined,
+        observacoes:    input.observacoes,
+        ...(input.anamnese ? {
+          anamneses: { create: { conteudo: input.anamnese as object } },
+        } : {}),
+      },
+    });
+    return { id: cliente.id };
+  }
 
   async buscarAniversariantesHoje(clinicaId: UniqueEntityID): Promise<ClienteAniversariante[]> {
     const hoje = new Date();
