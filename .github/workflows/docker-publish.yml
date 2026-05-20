@@ -34,11 +34,10 @@ jobs:
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest
 
       - name: Make package public
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.packages.updatePackageForAuthenticatedUser({
-              package_type: 'container',
-              package_name: 'clinica-estetica-api',
-              visibility: 'public'
-            })
+        run: |
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/user/packages/container/clinica-estetica-api" \
+            -d '{"visibility":"public"}'
