@@ -32,3 +32,13 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ env.IMAGE_NAME }}:latest
+
+      - name: Make package public
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.packages.updatePackageForAuthenticatedUser({
+              package_type: 'container',
+              package_name: 'clinica-estetica-api',
+              visibility: 'public'
+            })
