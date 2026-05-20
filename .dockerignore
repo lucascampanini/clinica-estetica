@@ -8,3 +8,5 @@ coverage
 .git
 .gitignore
 tests
+web
+scripts
