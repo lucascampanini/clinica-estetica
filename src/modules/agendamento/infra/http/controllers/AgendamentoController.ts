@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '@infra/database/prisma';
+import { UniqueEntityID } from '@shared/domain/UniqueEntityID';
 import { AgendamentoRepositoryPrisma } from '../../repositories/AgendamentoRepositoryPrisma';
 import { CriarAgendamentoUseCase } from '../../../application/use-cases/CriarAgendamento/CriarAgendamentoUseCase';
 import { AtualizarStatusAgendamentoUseCase } from '../../../application/use-cases/AtualizarStatus/AtualizarStatusAgendamentoUseCase';
@@ -37,13 +38,11 @@ export class AgendamentoController {
   }
 
   async listarPorDia(req: Request, res: Response): Promise<void> {
-    const result = await new ListarAgendamentosUseCase(this.repo).executar({
-      tipo:      'dia',
-      clinicaId: String(req.params['clinicaId']),
-      data:      String(req.query['data'] ?? new Date().toISOString().slice(0, 10)),
-    });
-    if (result.isFailure) { res.status(422).json({ error: result.getErrorValue() }); return; }
-    res.status(200).json(result.getValue().map(mapAgendamento));
+    const clinicaId = new UniqueEntityID(String(req.params['clinicaId']));
+    const dataStr   = String(req.query['data'] ?? new Date().toISOString().slice(0, 10));
+    const data      = new Date(dataStr + 'T12:00:00');
+    const rows      = await this.repo.listarPorDiaDetalhado(clinicaId, data);
+    res.status(200).json(rows);
   }
 
   async listarPorCliente(req: Request, res: Response): Promise<void> {

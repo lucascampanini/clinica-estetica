@@ -1,6 +1,6 @@
 import { PrismaClient, StatusAgendamento as PrismaStatus } from '@prisma/client';
 import { UniqueEntityID } from '@shared/domain/UniqueEntityID';
-import { IAgendamentoRepository } from '../../domain/repositories/IAgendamentoRepository';
+import { IAgendamentoRepository, AgendamentoDetalhado } from '../../domain/repositories/IAgendamentoRepository';
 import { Agendamento, StatusAgendamento } from '../../domain/entities/Agendamento';
 
 export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
@@ -43,6 +43,34 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
       orderBy: { inicio: 'asc' },
     });
     return rows.map(r => this.toDomain(r));
+  }
+
+  async listarPorDiaDetalhado(clinicaId: UniqueEntityID, data: Date): Promise<AgendamentoDetalhado[]> {
+    const inicio = new Date(data); inicio.setHours(0, 0, 0, 0);
+    const fim    = new Date(data); fim.setHours(23, 59, 59, 999);
+    const rows = await this.prisma.agendamento.findMany({
+      where: { clinicaId: clinicaId.toString(), inicio: { gte: inicio, lte: fim } },
+      orderBy: { inicio: 'asc' },
+      include: {
+        cliente:      { select: { nome: true, telefone: true } },
+        profissional: { select: { nome: true } },
+        servico:      { select: { nome: true } },
+      },
+    });
+    return rows.map(r => ({
+      id:               r.id,
+      clienteId:        r.clienteId,
+      clienteNome:      (r as any).cliente.nome,
+      clienteTelefone:  (r as any).cliente.telefone,
+      profissionalId:   r.profissionalId,
+      profissionalNome: (r as any).profissional.nome,
+      servicoId:        r.servicoId,
+      servicoNome:      (r as any).servico.nome,
+      inicio:           r.inicio,
+      fim:              r.fim,
+      status:           r.status,
+      observacoes:      r.observacoes ?? undefined,
+    }));
   }
 
   async listarPorCliente(clienteId: UniqueEntityID): Promise<Agendamento[]> {

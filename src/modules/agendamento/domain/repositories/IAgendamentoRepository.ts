@@ -1,14 +1,29 @@
 import { UniqueEntityID } from '@shared/domain/UniqueEntityID';
 import { Agendamento } from '../entities/Agendamento';
 
+export interface AgendamentoDetalhado {
+  id:               string;
+  clienteId:        string;
+  clienteNome:      string;
+  clienteTelefone:  string;
+  profissionalId:   string;
+  profissionalNome: string;
+  servicoId:        string;
+  servicoNome:      string;
+  inicio:           Date;
+  fim:              Date;
+  status:           string;
+  observacoes?:     string;
+}
+
 export interface IAgendamentoRepository {
   salvar(agendamento: Agendamento): Promise<void>;
   atualizar(agendamento: Agendamento): Promise<void>;
   buscarPorId(id: UniqueEntityID): Promise<Agendamento | null>;
   listarPorDia(clinicaId: UniqueEntityID, data: Date): Promise<Agendamento[]>;
+  listarPorDiaDetalhado(clinicaId: UniqueEntityID, data: Date): Promise<AgendamentoDetalhado[]>;
   listarPorCliente(clienteId: UniqueEntityID): Promise<Agendamento[]>;
   listarPorProfissional(profissionalId: UniqueEntityID, data: Date): Promise<Agendamento[]>;
-  // Retorna conflitos de horário para um profissional (excluindo o próprio agendamento se id fornecido)
   buscarConflitos(
     profissionalId: UniqueEntityID,
     inicio: Date,
